@@ -1,9 +1,12 @@
 """News Analyzer: search recent news, analyse an article with AI, store and list the results."""
 
+import os
+
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from pydantic import BaseModel
 
+import analyzer
 import db
 import news
 
@@ -34,3 +37,34 @@ def search_news(q: str = Query(min_length=1, max_length=200)) -> list[SearchResu
     except news.NewsError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
     return [SearchResult(article=a, analysis=db.get_analysis_by_url(a.url)) for a in articles]
+
+
+@app.post("/api/analyses", status_code=201)
+def create_analysis(article: news.Article, response: Response) -> db.StoredAnalysis:
+    """Analyse an article with AI and save it (201); if it was analysed before, return that (200)."""
+    existing = db.get_analysis_by_url(article.url)
+    if existing is not None:
+        response.status_code = 200
+        return existing
+    try:
+        new_analysis = _analyze_article(article)
+    except analyzer.AnalysisError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    analysis_id = db.save_analysis(new_analysis)
+    response.headers["Location"] = f"/api/analyses/{analysis_id}"
+    return db.get_analysis(analysis_id)
+
+
+def _analyze_article(article: news.Article) -> db.NewAnalysis:
+    """Get the article's text (the full page if possible, else the snippet) and analyse it with AI."""
+    text = news.fetch_article_text(article.url)
+    result = analyzer.analyze(article.title, text or article.description)
+    return db.NewAnalysis(
+        url=article.url,
+        title=article.title,
+        source=article.source,
+        published_at=article.published_at,
+        **result.model_dump(),  # summary, subject, sentiment, sentiment_score, reason, **unpacks dict
+        text_source="full_text" if text else "snippet",
+        model=os.environ["OPENAI_MODEL"],
+    )

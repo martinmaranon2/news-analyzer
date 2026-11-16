@@ -5,7 +5,7 @@ from datetime import datetime
 
 import httpx
 import trafilatura
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 GNEWS_SEARCH_URL = "https://gnews.io/api/v4/search"
 MIN_TEXT_LENGTH = 500  # shorter extracted "articles" are usually cookie banners or paywall teasers
@@ -22,7 +22,7 @@ class NewsError(Exception):
 class Article(BaseModel):
     """One news article from a search."""
 
-    url: str
+    url: str = Field(pattern=r"^https?://")  # only web links: no "javascript:" links shown to other users
     title: str
     source: str
     published_at: datetime
