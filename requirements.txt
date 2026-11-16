@@ -1,6 +1,7 @@
 fastapi==0.163.1        # web framework: routes, input validation, /docs page
 uvicorn==0.54.0         # the server process that runs the FastAPI app
 psycopg[binary]==3.3.9  # PostgreSQL driver
+pydantic==2.14.3        # validated data classes (db.py models); also used by FastAPI
 httpx==0.28.1           # HTTP client: calls GNews and downloads article pages
 trafilatura==2.3.1      # pulls the article text out of a page's HTML
 openai==3.51.0          # official OpenAI SDK

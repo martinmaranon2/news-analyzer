@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import psycopg
-from pydantic import BaseModel
+from pydantic import BaseModel # To make sure we have all data in format we want
 
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
@@ -58,6 +58,6 @@ def save_analysis(analysis: NewAnalysis) -> int:
                     %(sentiment)s, %(sentiment_score)s, %(reason)s, %(text_source)s, %(model)s)
             RETURNING id
             """,
-            analysis.model_dump(),
-        ).fetchone()
+            analysis.model_dump(), # turns analysis into dictionary to fill into VALUES
+        ).fetchone() # execute returns a table, in this case 1x1; pick first row with fetchone(): (new_id,) 
     return row[0]
