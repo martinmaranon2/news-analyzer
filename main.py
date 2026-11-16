@@ -55,6 +55,21 @@ def create_analysis(article: news.Article, response: Response) -> db.StoredAnaly
     return db.get_analysis(analysis_id)
 
 
+@app.get("/api/analyses")
+def list_saved_analyses(sentiment: db.Sentiment | None = None) -> list[db.StoredAnalysis]:
+    """Return all saved analyses, newest first; only one sentiment if ?sentiment= is given."""
+    return db.list_analyses(sentiment)
+
+
+@app.get("/api/analyses/{analysis_id}")
+def get_saved_analysis(analysis_id: int) -> db.StoredAnalysis:
+    """Return one saved analysis, or 404 if there is none with this id."""
+    analysis = db.get_analysis(analysis_id)
+    if analysis is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return analysis
+
+
 def _analyze_article(article: news.Article) -> db.NewAnalysis:
     """Get the article's text (the full page if possible, else the snippet) and analyse it with AI."""
     text = news.fetch_article_text(article.url)
