@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import psycopg
+from psycopg.rows import class_row
 from pydantic import BaseModel # To make sure we have all data in format we want
 
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
@@ -59,5 +60,30 @@ def save_analysis(analysis: NewAnalysis) -> int:
             RETURNING id
             """,
             analysis.model_dump(), # turns analysis into dictionary to fill into VALUES
-        ).fetchone() # execute returns a table, in this case 1x1; pick first row with fetchone(): (new_id,) 
+        ).fetchone() # execute returns cursor holding a table, in this case 1x1; pick first row with fetchone(): (new_id,)
     return row[0]
+
+
+def get_analysis(analysis_id: int) -> StoredAnalysis | None:
+    """Return the analysis with this id, or None if there is none."""
+    with _connect() as conn:
+        cursor = conn.cursor(row_factory=class_row(StoredAnalysis)) # turn SQL rows back into stored analysis object
+        return cursor.execute("SELECT * FROM analyses WHERE id = %s", (analysis_id,)).fetchone()
+
+
+def get_analysis_by_url(url: str) -> StoredAnalysis | None:
+    """Return the analysis of this article URL, or None if it wasn't analysed yet."""
+    with _connect() as conn:
+        cursor = conn.cursor(row_factory=class_row(StoredAnalysis))
+        return cursor.execute("SELECT * FROM analyses WHERE url = %s", (url,)).fetchone()
+
+
+def list_analyses(sentiment: Sentiment | None = None) -> list[StoredAnalysis]:
+    """Return saved analyses, newest first; only those with one sentiment if given."""
+    with _connect() as conn:
+        cursor = conn.cursor(row_factory=class_row(StoredAnalysis))
+        if sentiment is None:
+            return cursor.execute("SELECT * FROM analyses ORDER BY created_at DESC").fetchall()
+        return cursor.execute(
+            "SELECT * FROM analyses WHERE sentiment = %s ORDER BY created_at DESC", (sentiment,)
+        ).fetchall()
