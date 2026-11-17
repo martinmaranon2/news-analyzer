@@ -52,7 +52,7 @@ def _to_article(item: dict) -> Article:
         title=item["title"],
         source=item["source"]["name"],
         published_at=item["publishedAt"],
-        description=item["description"],
+        description=item.get("description") or "",  # GNews sometimes sends null: an empty snippet, not a failed search
     )
 
 
