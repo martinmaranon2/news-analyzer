@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>News Analyzer</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>News Analyzer</h1>
+    <p>What is the news saying about a company or topic right now, and is it good or bad for them?</p>
+  </header>
+
+  <main>
+    <form id="search-form" class="search" role="search">
+      <label for="search-input" class="visually-hidden">Company or topic</label>
+      <input id="search-input" type="search" placeholder="A company or topic, e.g. Nvidia" maxlength="200" required>
+      <button type="submit">Search</button>
+    </form>
+    <p id="search-status" class="status" role="status"></p>
+
+    <section id="results-section" hidden>
+      <div class="section-header">
+        <h2>Search results</h2>
+        <button id="analyze-all" type="button">Analyze all</button>
+      </div>
+      <div class="sentiment-bar" aria-hidden="true">
+        <span class="positive"></span><span class="neutral"></span><span class="negative"></span><span class="pending"></span>
+      </div>
+      <p id="sentiment-summary" class="status" role="status"></p>
+      <ol id="results" class="cards"></ol>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <h2>Saved analyses</h2>
+        <label>Show
+          <select id="sentiment-filter">
+            <option value="">all</option>
+            <option value="positive">positive</option>
+            <option value="neutral">neutral</option>
+            <option value="negative">negative</option>
+          </select>
+        </label>
+      </div>
+      <p id="saved-status" class="status" role="status"></p>
+      <ol id="saved" class="cards"></ol>
+    </section>
+  </main>
+
+  <!-- One card. app.js copies it for every article and fills it in with textContent. -->
+  <template id="card-template">
+    <li class="card">
+      <a class="card-title" target="_blank" rel="noopener noreferrer"></a>
+      <p class="card-meta"></p>
+      <p class="card-description"></p>
+      <div class="analysis" hidden>
+        <p><span class="badge"></span> <span class="analysis-reason"></span></p>
+        <p class="analysis-summary"></p>
+        <p class="analysis-source"></p>
+      </div>
+      <button class="analyze" type="button">Analyze</button>
+      <p class="card-error" role="alert" hidden></p>
+    </li>
+  </template>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

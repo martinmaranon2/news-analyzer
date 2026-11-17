@@ -1,9 +1,12 @@
 """News Analyzer: search recent news, analyse an article with AI, store and list the results."""
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import analyzer
@@ -13,7 +16,10 @@ import news
 load_dotenv()  # copy the settings from .env into os.environ (on Render there is no .env: it does nothing)
 db.init_db()
 
+STATIC_DIR = Path(__file__).parent / "static"
+
 app = FastAPI(title="News Analyzer")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")  # static/app.js → /static/app.js
 
 
 class SearchResult(BaseModel):
@@ -27,6 +33,12 @@ class SearchResult(BaseModel):
 def health() -> dict[str, str]:
     """Tell the caller (me, or Render's health check) that the server is running."""
     return {"status": "ok", "service": "news analyzer"}
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    """Serve the page; its JavaScript then calls the /api routes."""
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/api/articles")
