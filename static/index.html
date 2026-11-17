@@ -4,11 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>News Analyzer</title>
+  <!-- Fonts: Newsreader (a serif made for news on screens) for headlines, Schibsted Grotesk for the interface. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Schibsted+Grotesk:wght@400..700&display=swap">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <header class="page-header">
-    <h1>News Analyzer</h1>
+    <h1><a href="/" class="home-link">News Analyzer</a></h1>
     <p>What is the news saying about a company or topic right now, and is it good or bad for them?</p>
   </header>
 
@@ -16,26 +20,35 @@
     <form id="search-form" class="search" role="search">
       <label for="search-input" class="visually-hidden">Company or topic</label>
       <input id="search-input" type="search" placeholder="A company or topic, e.g. Nvidia" maxlength="200" required>
-      <button type="submit">Search</button>
+      <button class="primary" type="submit">Search</button>
     </form>
     <p id="search-status" class="status" role="status"></p>
 
     <section id="results-section" hidden>
       <div class="section-header">
-        <h2>Search results</h2>
-        <button id="analyze-all" type="button">Analyze all</button>
+        <h2 id="results-heading">Search results</h2>
+        <button id="analyze-all" class="primary" type="button">Analyze all</button>
       </div>
-      <div class="sentiment-bar" aria-hidden="true">
-        <span class="positive"></span><span class="neutral"></span><span class="negative"></span><span class="pending"></span>
+      <div class="verdict-panel">
+        <p id="verdict" class="verdict" role="status"></p>
+        <div class="sentiment-bar" aria-hidden="true">
+          <span class="positive"></span><span class="neutral"></span><span class="negative"></span><span class="pending"></span>
+        </div>
+        <ul class="legend">
+          <li class="positive"><span class="count"></span> positive</li>
+          <li class="neutral"><span class="count"></span> neutral</li>
+          <li class="negative"><span class="count"></span> negative</li>
+          <li class="pending"><span class="count"></span> not analysed</li>
+        </ul>
+        <p class="note">Each verdict is about the article's own subject, named on its label and scored from −1 (bad) to +1 (good). That subject can differ from your search.</p>
       </div>
-      <p id="sentiment-summary" class="status" role="status"></p>
       <ol id="results" class="cards"></ol>
     </section>
 
     <section>
       <div class="section-header">
         <h2>Saved analyses</h2>
-        <label>Show
+        <label class="filter">Show
           <select id="sentiment-filter">
             <option value="">all</option>
             <option value="positive">positive</option>
@@ -46,22 +59,45 @@
       </div>
       <p id="saved-status" class="status" role="status"></p>
       <ol id="saved" class="cards"></ol>
+      <button id="show-all-saved" class="text-button show-all" type="button" hidden></button>
     </section>
   </main>
 
-  <!-- One card. app.js copies it for every article and fills it in with textContent. -->
+  <!-- One search result. app.js copies it for every article and fills it in with textContent. -->
   <template id="card-template">
     <li class="card">
       <a class="card-title" target="_blank" rel="noopener noreferrer"></a>
       <p class="card-meta"></p>
       <p class="card-description"></p>
       <div class="analysis" hidden>
-        <p><span class="badge"></span> <span class="analysis-reason"></span></p>
-        <p class="analysis-summary"></p>
-        <p class="analysis-source"></p>
+        <p class="verdict-line"><span class="badge"></span> <span class="provenance"></span></p>
+        <p><span class="field-label">Why</span> <span class="analysis-reason"></span></p>
+        <p><span class="field-label">Summary</span> <span class="analysis-summary"></span></p>
       </div>
-      <button class="analyze" type="button">Analyze</button>
+      <button class="analyze text-button" type="button">Analyze</button>
       <p class="card-error" role="alert" hidden></p>
+    </li>
+  </template>
+
+  <!-- One saved analysis: a compact row (<details>) that opens to show the reason and summary. -->
+  <template id="saved-template">
+    <li class="saved-row">
+      <details>
+        <summary>
+          <span class="badge"></span>
+          <span class="saved-title"></span>
+          <span class="saved-date"></span>
+        </summary>
+        <div class="saved-body">
+          <p><span class="provenance"></span></p>
+          <p><span class="field-label">Why</span> <span class="analysis-reason"></span></p>
+          <p><span class="field-label">Summary</span> <span class="analysis-summary"></span></p>
+          <p class="saved-meta">
+            <span class="saved-source"></span> ·
+            <a class="saved-link" target="_blank" rel="noopener noreferrer">Open the article</a>
+          </p>
+        </div>
+      </details>
     </li>
   </template>
 

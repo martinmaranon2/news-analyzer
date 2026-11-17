@@ -4,16 +4,23 @@ const searchForm = document.querySelector("#search-form");
 const searchInput = document.querySelector("#search-input");
 const searchStatus = document.querySelector("#search-status");
 const resultsSection = document.querySelector("#results-section");
+const resultsHeading = document.querySelector("#results-heading");
 const resultsList = document.querySelector("#results");
 const analyzeAllButton = document.querySelector("#analyze-all");
+const verdict = document.querySelector("#verdict");
 const sentimentBar = document.querySelector(".sentiment-bar");
-const sentimentSummary = document.querySelector("#sentiment-summary");
+const sentimentLegend = document.querySelector(".legend");
 const savedList = document.querySelector("#saved");
 const savedStatus = document.querySelector("#saved-status");
+const showAllSavedButton = document.querySelector("#show-all-saved");
 const sentimentFilter = document.querySelector("#sentiment-filter");
 const cardTemplate = document.querySelector("#card-template");
+const savedTemplate = document.querySelector("#saved-template");
+
+const SAVED_PREVIEW_COUNT = 5; // the saved list shows the newest 5 until "Show all" is clicked
 
 let shownResults = []; // the current search: one { article, card } per result
+let showAllSaved = false;
 
 // Call our API and return the parsed JSON. On an error status, log the server's detail for
 // developers and throw, so the caller can show the user a friendly message instead.
@@ -46,9 +53,10 @@ searchForm.addEventListener("submit", async (event) => {
 function showResults(query, results) {
   shownResults = results.map(({ article, analysis }) => ({ article, card: createCard(article, analysis) }));
   resultsList.replaceChildren(...shownResults.map((result) => result.card));
+  resultsHeading.textContent = `News on “${query}”`;
   searchStatus.textContent = results.length > 0 ? "" : `No recent articles found for “${query}”. Try a broader term.`;
   resultsSection.hidden = results.length === 0;
-  updateSentimentBar();
+  updateVerdict();
 }
 
 // ---- Cards ----
@@ -62,7 +70,9 @@ function createCard(article, analysis) {
   title.href = article.url; // safe: the API only accepts http(s) URLs
   card.querySelector(".card-meta").textContent = `${article.source} · ${formatDate(article.published_at)}`;
   card.querySelector(".card-description").textContent = article.description ?? "";
-  card.querySelector(".analyze").addEventListener("click", async () => {
+  const button = card.querySelector(".analyze");
+  button.ariaLabel = `Analyze: ${article.title}`; // a screen reader hears which article, not ten times "Analyze"
+  button.addEventListener("click", async () => {
     await analyzeCard(card, article);
     loadSaved();
   });
@@ -70,16 +80,23 @@ function createCard(article, analysis) {
   return card;
 }
 
-function showAnalysis(card, analysis) {
-  card.dataset.sentiment = analysis.sentiment; // the CSS colours the card by it; the bar counts it
+// Fill in the AI's verdict, reason, summary and evidence. Used by the result cards and the saved rows.
+function fillAnalysis(element, analysis) {
+  element.dataset.sentiment = analysis.sentiment; // the CSS colours the label by it; the bar counts it
   const score = analysis.sentiment_score;
-  card.querySelector(".badge").textContent =
+  element.querySelector(".badge").textContent =
     `${capitalize(analysis.sentiment)} for ${analysis.subject} (${score > 0 ? "+" : ""}${score.toFixed(1)})`;
-  card.querySelector(".analysis-reason").textContent = analysis.reason;
-  card.querySelector(".analysis-summary").textContent = analysis.summary;
-  card.querySelector(".analysis-source").textContent = analysis.text_source === "full_text"
-    ? "Based on the full article."
-    : "Based on the headline and snippet only: the full article couldn't be downloaded.";
+  element.querySelector(".analysis-reason").textContent = analysis.reason;
+  element.querySelector(".analysis-summary").textContent = analysis.summary;
+  const provenance = element.querySelector(".provenance");
+  provenance.dataset.source = analysis.text_source; // the CSS gives "snippet" a caution colour
+  provenance.textContent = analysis.text_source === "full_text"
+    ? "Based on the full article"
+    : "Based on the headline and snippet only: the full article couldn't be downloaded";
+}
+
+function showAnalysis(card, analysis) {
+  fillAnalysis(card, analysis);
   card.querySelector(".card-description").hidden = true;
   card.querySelector(".analysis").hidden = false;
   card.querySelector(".analyze").hidden = true;
@@ -89,7 +106,8 @@ async function analyzeCard(card, article) {
   const button = card.querySelector(".analyze");
   const error = card.querySelector(".card-error");
   button.disabled = true; // also stops a double click from analysing the same article twice
-  button.textContent = "Analyzing…";
+  button.textContent = "Analyzing… usually 3–10 s";
+  card.ariaBusy = "true"; // the CSS shows a moving line on busy cards
   error.hidden = true;
   try {
     const analysis = await callApi("/api/analyses", {
@@ -103,33 +121,46 @@ async function analyzeCard(card, article) {
     error.hidden = false;
     button.textContent = "Try again";
   }
+  card.ariaBusy = "false";
   button.disabled = false;
-  updateSentimentBar();
+  updateVerdict();
 }
 
-// ---- Analyze all + sentiment bar ----
+// ---- Analyze all + verdict ----
 
 analyzeAllButton.addEventListener("click", async () => {
   analyzeAllButton.disabled = true;
   const pending = shownResults.filter(({ card }) => !card.dataset.sentiment && !card.querySelector(".analyze").disabled);
+  updateVerdict(); // the disabled button now counts down: "Analyzing… 8 left"
   await Promise.all(pending.map(({ article, card }) => analyzeCard(card, article))); // all at once, in parallel
   analyzeAllButton.disabled = false;
+  updateVerdict();
   loadSaved();
 });
 
-// Count the results per sentiment; each part of the bar grows with its count (grey = not analysed yet).
-function updateSentimentBar() {
+// Count the results per sentiment, then update the headline, the bar (grey = not analysed yet),
+// the legend and the Analyze all button.
+function updateVerdict() {
   const counts = { positive: 0, neutral: 0, negative: 0 };
   for (const { card } of shownResults) {
     if (card.dataset.sentiment) counts[card.dataset.sentiment] += 1;
   }
   const analysed = counts.positive + counts.neutral + counts.negative;
-  for (const [part, count] of Object.entries({ ...counts, pending: shownResults.length - analysed })) {
-    sentimentBar.querySelector(`.${part}`).style.flexGrow = count;
+  const remaining = shownResults.length - analysed;
+  for (const [part, count] of Object.entries({ ...counts, pending: remaining })) {
+    sentimentBar.querySelector(`.${part}`).style.flexGrow = count; // each part grows with its count
+    sentimentLegend.querySelector(`.${part} .count`).textContent = count;
   }
-  sentimentSummary.textContent = `${analysed} of ${shownResults.length} analysed · ` +
-    `${counts.positive} positive · ${counts.neutral} neutral · ${counts.negative} negative`;
-  analyzeAllButton.hidden = analysed === shownResults.length;
+  verdict.textContent = `${verdictHeadline(counts, analysed)} · ${analysed} of ${shownResults.length} analysed`;
+  analyzeAllButton.textContent = analyzeAllButton.disabled ? `Analyzing… ${remaining} left` : `Analyze all (${remaining})`;
+  analyzeAllButton.hidden = remaining === 0;
+}
+
+// "Mostly negative" if one sentiment has more than half of the analysed results, otherwise "Mixed".
+function verdictHeadline(counts, analysed) {
+  if (analysed === 0) return "No verdict yet";
+  const [sentiment, count] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return count > analysed / 2 ? `Mostly ${sentiment}` : "Mixed";
 }
 
 // ---- Saved analyses ----
@@ -139,7 +170,10 @@ async function loadSaved() {
   const path = sentiment ? `/api/analyses?sentiment=${sentiment}` : "/api/analyses";
   try {
     const analyses = await callApi(path);
-    savedList.replaceChildren(...analyses.map((analysis) => createCard(analysis, analysis)));
+    const shown = showAllSaved ? analyses : analyses.slice(0, SAVED_PREVIEW_COUNT);
+    savedList.replaceChildren(...shown.map(createSavedRow));
+    showAllSavedButton.textContent = `Show all ${analyses.length}`;
+    showAllSavedButton.hidden = shown.length === analyses.length;
     savedStatus.textContent = analyses.length > 0 ? ""
       : sentiment ? `No ${sentiment} analyses yet.`
       : "No analyses yet. Search for a company or topic and click Analyze.";
@@ -148,7 +182,22 @@ async function loadSaved() {
   }
 }
 
+// One saved analysis as a compact row: label, title and date; clicking it opens the reason and summary.
+function createSavedRow(analysis) {
+  const row = savedTemplate.content.firstElementChild.cloneNode(true);
+  row.querySelector(".saved-title").textContent = analysis.title;
+  row.querySelector(".saved-date").textContent = formatDate(analysis.published_at);
+  row.querySelector(".saved-source").textContent = analysis.source;
+  row.querySelector(".saved-link").href = analysis.url; // safe: the API only accepts http(s) URLs
+  fillAnalysis(row, analysis);
+  return row;
+}
+
 sentimentFilter.addEventListener("change", loadSaved);
+showAllSavedButton.addEventListener("click", () => {
+  showAllSaved = true;
+  loadSaved();
+});
 
 // ---- Small helpers ----
 

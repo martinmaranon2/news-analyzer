@@ -5,3 +5,7 @@ __pycache__/
 
 # Secrets: never commit real keys
 .env
+
+# Design-tool notes (Impeccable): kept on this machine, not part of the submission
+PRODUCT.md
+.impeccable/
