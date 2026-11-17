@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Schibsted+Grotesk:wght@400..700&display=swap">
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230c0c0b'/><text x='16' y='23.5' text-anchor='middle' font-family='Georgia,serif' font-size='21' fill='%23ece6d6'>N</text></svg>">
 </head>
 <body>
   <header class="page-header">
@@ -19,7 +20,7 @@
   <main>
     <form id="search-form" class="search" role="search">
       <label for="search-input" class="visually-hidden">Company or topic</label>
-      <input id="search-input" type="search" placeholder="A company or topic, e.g. Nvidia" maxlength="200" required>
+      <input id="search-input" type="search" placeholder="e.g. Nvidia or Airbus" maxlength="200" required>
       <button class="primary" type="submit">Search</button>
     </form>
     <p id="search-status" class="status" role="status"></p>
@@ -38,7 +39,7 @@
           <li class="positive"><span class="count"></span> positive</li>
           <li class="neutral"><span class="count"></span> neutral</li>
           <li class="negative"><span class="count"></span> negative</li>
-          <li class="pending"><span class="count"></span> not analysed</li>
+          <li class="pending"><span class="count"></span> not analyzed</li>
         </ul>
         <p class="note">Each verdict is about the article's own subject, named on its label and scored from −1 (bad) to +1 (good). That subject can differ from your search.</p>
       </div>
@@ -62,6 +63,7 @@
           </label>
         </div>
       </div>
+      <p id="briefing-hint" class="note briefing-hint" hidden>Choose a topic to get an AI briefing on all its saved analyses.</p>
       <!-- Shown while one topic is chosen: the AI sums up every saved analysis of that topic. -->
       <div id="briefing-panel" class="briefing-panel" hidden>
         <button id="brief-button" class="primary" type="button"></button>
@@ -87,8 +89,8 @@
       <p class="card-description"></p>
       <div class="analysis" hidden>
         <p class="verdict-line"><span class="badge"></span> <span class="provenance"></span></p>
-        <p><span class="field-label">Why</span> <span class="analysis-reason"></span></p>
-        <p><span class="field-label">Summary</span> <span class="analysis-summary"></span></p>
+        <p class="field"><span class="field-label">Why</span> <span class="analysis-reason"></span></p>
+        <p class="field"><span class="field-label">Summary</span> <span class="analysis-summary"></span></p>
       </div>
       <button class="analyze text-button" type="button">Analyze</button>
       <p class="card-error" role="alert" hidden></p>
@@ -106,10 +108,9 @@
         </summary>
         <div class="saved-body">
           <p><span class="provenance"></span></p>
-          <p><span class="field-label">Why</span> <span class="analysis-reason"></span></p>
-          <p><span class="field-label">Summary</span> <span class="analysis-summary"></span></p>
+          <p class="field"><span class="field-label">Why</span> <span class="analysis-reason"></span></p>
+          <p class="field"><span class="field-label">Summary</span> <span class="analysis-summary"></span></p>
           <p class="saved-meta">
-            <span class="saved-source"></span> ·
             <a class="saved-link" target="_blank" rel="noopener noreferrer">Open the article</a>
           </p>
         </div>

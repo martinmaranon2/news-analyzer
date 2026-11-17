@@ -80,9 +80,10 @@ def create_analysis(
         new_analysis = _analyze_article(article, _normalise_topic(topic))
     except analyzer.AnalysisError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
-    analysis_id = db.save_analysis(new_analysis)
-    response.headers["Location"] = f"/api/analyses/{analysis_id}"
-    return db.get_analysis(analysis_id)
+    db.save_analysis(new_analysis)
+    saved = db.get_analysis_by_url(article.url)
+    response.headers["Location"] = f"/api/analyses/{saved.id}"
+    return saved
 
 
 @app.get("/api/analyses")

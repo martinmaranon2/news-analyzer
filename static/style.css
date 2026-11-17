@@ -80,13 +80,12 @@ button:disabled { cursor: progress; }
 /* ---- Verdict: headline, bar, legend ---- */
 .verdict-panel { margin-top: 20px; }
 .verdict { margin: 0 0 16px; font-size: 1.875rem; line-height: 1.15; font-variant-numeric: lining-nums tabular-nums; }
-.sentiment-bar { display: flex; gap: 0; height: 6px; border-radius: 3px; overflow: hidden; background: var(--pending); }
-.sentiment-bar span { transition: flex-grow 700ms var(--ease-out); } /* the bar fills in as results arrive */
+.sentiment-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--pending); }
+.sentiment-bar span { background: var(--tone); transition: flex-grow 700ms var(--ease-out); } /* fills in as results arrive */
 .positive { --tone: var(--positive); }
 .neutral { --tone: var(--neutral); }
 .negative { --tone: var(--negative); }
 .pending { --tone: var(--pending); }
-.sentiment-bar span { background: var(--tone); }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 14px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.875rem; }
 .legend li::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: var(--tone); vertical-align: 1px; }
 .legend .pending::before { box-shadow: inset 0 0 0 1px var(--muted); }
@@ -106,14 +105,14 @@ button:disabled { cursor: progress; }
 .analysis { margin-top: 14px; }
 /* Tiny labels ("Why", "Summary") sitting in the gap above their text: position: absolute takes them out of the
    layout, so the line spacing stays exactly as it was without them. */
-.analysis p, .saved-body p { position: relative; }
+.card .field, .saved-body .field { position: relative; margin-top: 12px; } /* room above for the small label */
 .field-label { position: absolute; left: 0; top: -5px; color: var(--muted); font-size: 0.5rem; line-height: 1; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
 .verdict-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
 .card .analyze { margin-top: 12px; }
 .card-error { color: var(--negative); font-size: 0.875rem; }
 
 /* The sentiment label names who the verdict is about; the evidence note is only coloured when it is weak. */
-.badge { color: var(--tone, var(--neutral)); font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+.badge { color: var(--tone, var(--neutral)); font-size: 0.875rem; font-weight: 600; }
 .badge::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
 [data-sentiment="positive"] { --tone: var(--positive); }
 [data-sentiment="neutral"] { --tone: var(--neutral); }
@@ -131,11 +130,11 @@ button:disabled { cursor: progress; }
 }
 @keyframes sweep { from { background-position: -100% 0; } to { background-position: 200% 0; } }
 
-.saved-row summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "badge date chevron" "title title title"; align-items: baseline; gap: 6px 16px; padding: 16px 0; cursor: pointer; list-style: none; }
+.saved-row summary { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(50%) auto; grid-template-areas: "badge date chevron" "title title title"; align-items: baseline; gap: 6px 16px; padding: 16px 0; cursor: pointer; list-style: none; }
 .saved-row summary::-webkit-details-marker { display: none; }
-.saved-row .badge { grid-area: badge; white-space: normal; }
+.saved-row .badge { grid-area: badge; }
 .saved-title { grid-area: title; font-size: 1.125rem; line-height: 1.3; }
-.saved-date { grid-area: date; white-space: nowrap; }
+.saved-date { grid-area: date; text-align: right; }
 .saved-row summary:hover .saved-title { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 0.2em; }
 .saved-row summary::after { grid-area: chevron; content: ""; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: translateY(-3px) rotate(45deg); transition: transform 200ms var(--ease-out); }
 .saved-row details[open] summary::after { transform: translateY(0) rotate(-135deg); }
@@ -145,6 +144,7 @@ button:disabled { cursor: progress; }
 .show-all { margin-top: 16px; }
 
 /* Topic briefing: the AI's summing-up of every saved analysis of the chosen topic. */
+.briefing-hint { margin: 16px 0 0 auto; text-align: right; }
 .briefing-panel { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-bottom: 14px; }
 .briefing-panel button { align-self: flex-end; padding: 6px 14px; font-size: 0.875rem; } /* small, on the right */
 .briefing-panel:not([aria-busy="true"]) button:disabled { cursor: default; } /* "Briefed": done, not waiting */

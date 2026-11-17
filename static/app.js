@@ -2,6 +2,7 @@
 
 const searchForm = document.querySelector("#search-form");
 const searchInput = document.querySelector("#search-input");
+const searchButton = searchForm.querySelector("button");
 const searchStatus = document.querySelector("#search-status");
 const resultsSection = document.querySelector("#results-section");
 const resultsHeading = document.querySelector("#results-heading");
@@ -15,6 +16,7 @@ const savedStatus = document.querySelector("#saved-status");
 const showAllSavedButton = document.querySelector("#show-all-saved");
 const sentimentFilter = document.querySelector("#sentiment-filter");
 const topicFilter = document.querySelector("#topic-filter");
+const briefingHint = document.querySelector("#briefing-hint");
 const briefingPanel = document.querySelector("#briefing-panel");
 const briefButton = document.querySelector("#brief-button");
 const briefingError = document.querySelector("#briefing-error");
@@ -50,12 +52,14 @@ searchForm.addEventListener("submit", async (event) => {
   if (!query) return;
   searchStatus.textContent = `Searching for “${query}”…`;
   resultsSection.hidden = true;
+  searchButton.disabled = true; // one search at a time, so an older answer can't replace a newer one
   try {
     const results = await callApi(`/api/articles?q=${encodeURIComponent(query)}`);
     showResults(query, results);
   } catch {
     searchStatus.textContent = "The news search failed. Please try again in a minute.";
   }
+  searchButton.disabled = false;
 });
 
 function showResults(query, results) {
@@ -92,7 +96,7 @@ function createCard(article, analysis) {
 // Fill in the AI's verdict, reason, summary and evidence. Used by the result cards and the saved rows.
 function fillAnalysis(element, analysis) {
   element.dataset.sentiment = analysis.sentiment; // the CSS colours the label by it; the bar counts it
-  const score = analysis.sentiment_score;
+  const score = Number(analysis.sentiment_score.toFixed(1)); // round first, so -0.04 shows as 0.0, not -0.0
   element.querySelector(".badge").textContent =
     `${capitalize(analysis.sentiment)} for ${analysis.subject} (${score > 0 ? "+" : ""}${score.toFixed(1)})`;
   element.querySelector(".analysis-reason").textContent = analysis.reason;
@@ -126,7 +130,7 @@ async function analyzeCard(card, article) {
     });
     showAnalysis(card, analysis);
   } catch {
-    error.textContent = "Couldn't analyse this article. Please try again.";
+    error.textContent = "Couldn't analyze this article. Please try again.";
     error.hidden = false;
     button.textContent = "Try again";
   }
@@ -139,10 +143,12 @@ async function analyzeCard(card, article) {
 
 analyzeAllButton.addEventListener("click", async () => {
   analyzeAllButton.disabled = true;
+  searchButton.disabled = true; // a new search now would replace the cards that are still being analysed
   const pending = shownResults.filter(({ card }) => !card.dataset.sentiment && !card.querySelector(".analyze").disabled);
   updateVerdict(); // the disabled button now counts down: "Analyzing… 8 left"
   await Promise.all(pending.map(({ article, card }) => analyzeCard(card, article))); // all at once, in parallel
   analyzeAllButton.disabled = false;
+  searchButton.disabled = false;
   updateVerdict();
   loadSaved();
 });
@@ -160,7 +166,7 @@ function updateVerdict() {
     sentimentBar.querySelector(`.${part}`).style.flexGrow = count; // each part grows with its count
     sentimentLegend.querySelector(`.${part} .count`).textContent = count;
   }
-  verdict.textContent = `${verdictHeadline(counts, analysed)} · ${analysed} of ${shownResults.length} analysed`;
+  verdict.textContent = `${verdictHeadline(counts, analysed)} · ${analysed} of ${shownResults.length} analyzed`;
   analyzeAllButton.textContent = analyzeAllButton.disabled ? `Analyzing… ${remaining} left` : `Analyze all (${remaining})`;
   analyzeAllButton.hidden = remaining === 0;
 }
@@ -185,9 +191,9 @@ async function loadSaved() {
     savedList.replaceChildren(...shown.map(createSavedRow));
     showAllSavedButton.textContent = `Show all ${analyses.length}`;
     showAllSavedButton.hidden = shown.length === analyses.length;
-    savedStatus.textContent = analyses.length > 0 ? ""
-      : filters.size > 0 ? "No saved analyses match these filters."
-      : "No analyses yet. Search for a company or topic and click Analyze.";
+    if (analyses.length > 0) savedStatus.textContent = "";
+    else if (filters.size > 0) savedStatus.textContent = "No saved analyses match these filters.";
+    else savedStatus.textContent = "No analyses yet. Search for a company or topic and click Analyze.";
   } catch {
     savedStatus.textContent = "Couldn't load the saved analyses. Please reload the page.";
   }
@@ -197,8 +203,7 @@ async function loadSaved() {
 function createSavedRow(analysis) {
   const row = savedTemplate.content.firstElementChild.cloneNode(true);
   row.querySelector(".saved-title").textContent = analysis.title;
-  row.querySelector(".saved-date").textContent = formatDate(analysis.published_at);
-  row.querySelector(".saved-source").textContent = analysis.source;
+  row.querySelector(".saved-date").textContent = `${analysis.source} · ${formatDate(analysis.published_at)}`;
   row.querySelector(".saved-link").href = analysis.url; // safe: the API only accepts http(s) URLs
   fillAnalysis(row, analysis);
   return row;
@@ -220,7 +225,6 @@ async function loadTopics() {
 }
 
 sentimentFilter.addEventListener("change", loadSaved);
-topicFilter.addEventListener("change", loadSaved);
 showAllSavedButton.addEventListener("click", () => {
   showAllSaved = true;
   loadSaved();
@@ -235,6 +239,7 @@ function updateBriefingPanel() {
   const topic = topicFilter.value;
   const last = briefings.get(topic);
   briefingPanel.hidden = !topic;
+  briefingHint.hidden = Boolean(topic) || topicCounts.size === 0; // no topics yet: nothing to choose
   if (last) showBriefing(last);
   else briefing.hidden = true;
   if (briefingPanel.ariaBusy === "true") return; // the click handler is using the button
@@ -277,6 +282,7 @@ function showBriefing(result) {
 topicFilter.addEventListener("change", () => {
   briefingError.hidden = true; // an error was about the previous topic
   updateBriefingPanel();
+  loadSaved();
 });
 
 // ---- Small helpers ----

@@ -56,20 +56,19 @@ def init_db() -> None:
         conn.execute(SCHEMA_PATH.read_text()) # We read all of schema.sql and execute it
 
 
-def save_analysis(analysis: NewAnalysis) -> int:
-    """Insert one analysis and return the id Postgres gave it."""
+def save_analysis(analysis: NewAnalysis) -> None:
+    """Insert one analysis. If its URL was saved meanwhile (two requests at once), keep that one."""
     with _connect() as conn:
-        row = conn.execute(
+        conn.execute(
             """
             INSERT INTO analyses (url, title, source, published_at, summary, subject,
                                   sentiment, sentiment_score, reason, text_source, model, topic)
             VALUES (%(url)s, %(title)s, %(source)s, %(published_at)s, %(summary)s, %(subject)s,
                     %(sentiment)s, %(sentiment_score)s, %(reason)s, %(text_source)s, %(model)s, %(topic)s)
-            RETURNING id
+            ON CONFLICT (url) DO NOTHING
             """,
             analysis.model_dump(), # turns analysis into dictionary to fill into VALUES
-        ).fetchone() # execute returns cursor holding a table, in this case 1x1; pick first row with fetchone(): (new_id,)
-    return row[0]
+        )
 
 
 def get_analysis(analysis_id: int) -> StoredAnalysis | None:
