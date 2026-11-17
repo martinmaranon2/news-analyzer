@@ -149,6 +149,9 @@ In both halves I always checked what the AI produced and made sure I understood 
   URLs that came from a GNews search, and block private network addresses.
 - **No paging:** the saved list loads every analysis at once.
 - **Late news:** the free GNews plan delivers articles about 12 hours late.
+- **Some search terms fail:** GNews rejects a hyphen, so `Rolls-Royce` gives a 400 (also in quotes), and the page shows
+  the generic "try again in a minute", which is misleading. `Rolls Royce` works. Next step: replace the characters
+  GNews rejects before sending the search, and tell the user when the search term itself is the problem.
 - **Free hosting:** the Render instance sleeps when idle (about a minute to wake up), and its free database expires 30
   days after creation.
 - **Tests run against a local Postgres:** with more time, they would run automatically in CI on every push.
