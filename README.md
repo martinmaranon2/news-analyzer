@@ -141,6 +141,10 @@ In both halves I always checked what the AI produced and made sure I understood 
 ## Limitations and what I'd do with more time
 
 - **No rate limiting:** anyone with the link can spend OpenAI credit. Next step: a limit per visitor and per day.
+- **One shared list for everyone:** there is no login, so every visitor sees every saved analysis, including the ones
+  others ran. Next step: keep the analyses shared as a cache (an article is still analyzed and paid for only once), but
+  give each user their own saved list through a small link table (user, analysis, topic). That would also let one
+  article belong to different topics for different users.
 - **The server downloads any article URL a client sends:** only `http`/`https` is checked. Next step: only accept
   URLs that came from a GNews search, and block private network addresses.
 - **No paging:** the saved list loads every analysis at once.
