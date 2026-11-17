@@ -28,6 +28,14 @@ class NewAnalysis(BaseModel):
     reason: str
     text_source: Literal["full_text", "snippet"]
     model: str
+    topic: str | None = None  # the search that found the article; None for older analyses
+
+
+class Topic(BaseModel):
+    """A search topic and how many saved analyses came from it."""
+
+    topic: str
+    count: int
 
 
 class StoredAnalysis(NewAnalysis):
@@ -54,9 +62,9 @@ def save_analysis(analysis: NewAnalysis) -> int:
         row = conn.execute(
             """
             INSERT INTO analyses (url, title, source, published_at, summary, subject,
-                                  sentiment, sentiment_score, reason, text_source, model)
+                                  sentiment, sentiment_score, reason, text_source, model, topic)
             VALUES (%(url)s, %(title)s, %(source)s, %(published_at)s, %(summary)s, %(subject)s,
-                    %(sentiment)s, %(sentiment_score)s, %(reason)s, %(text_source)s, %(model)s)
+                    %(sentiment)s, %(sentiment_score)s, %(reason)s, %(text_source)s, %(model)s, %(topic)s)
             RETURNING id
             """,
             analysis.model_dump(), # turns analysis into dictionary to fill into VALUES
@@ -78,12 +86,30 @@ def get_analysis_by_url(url: str) -> StoredAnalysis | None:
         return cursor.execute("SELECT * FROM analyses WHERE url = %s", (url,)).fetchone()
 
 
-def list_analyses(sentiment: Sentiment | None = None) -> list[StoredAnalysis]:
-    """Return saved analyses, newest article first; only those with one sentiment if given."""
+def list_analyses(sentiment: Sentiment | None = None, topic: str | None = None) -> list[StoredAnalysis]:
+    """Return saved analyses, newest article first; each filter that is given narrows the list."""
     with _connect() as conn:
         cursor = conn.cursor(row_factory=class_row(StoredAnalysis))
-        if sentiment is None:
-            return cursor.execute("SELECT * FROM analyses ORDER BY published_at DESC").fetchall()
         return cursor.execute(
-            "SELECT * FROM analyses WHERE sentiment = %s ORDER BY published_at DESC", (sentiment,)
+            """
+            SELECT * FROM analyses
+            WHERE (%(sentiment)s::text IS NULL OR sentiment = %(sentiment)s)  -- no filter given: true for every row
+              AND (%(topic)s::text IS NULL OR topic = %(topic)s)
+            ORDER BY published_at DESC
+            """,
+            {"sentiment": sentiment, "topic": topic},
+        ).fetchall()
+
+
+def list_topics() -> list[Topic]:
+    """Return every topic that has saved analyses, with how many each, the biggest first."""
+    with _connect() as conn:
+        cursor = conn.cursor(row_factory=class_row(Topic))
+        return cursor.execute(
+            """
+            SELECT topic, count(*) AS count FROM analyses
+            WHERE topic IS NOT NULL
+            GROUP BY topic
+            ORDER BY count DESC, topic
+            """
         ).fetchall()

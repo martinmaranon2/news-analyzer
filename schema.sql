@@ -12,5 +12,9 @@ CREATE TABLE IF NOT EXISTS analyses (
     reason          TEXT NOT NULL,
     text_source     TEXT NOT NULL CHECK (text_source IN ('full_text', 'snippet')),
     model           TEXT NOT NULL,
+    topic           TEXT,  -- the search that found the article, lower case; NULL for analyses saved before topics existed
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Databases created before the topic column existed get it here (does nothing if it is already there)
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS topic TEXT;

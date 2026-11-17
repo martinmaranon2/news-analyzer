@@ -14,12 +14,14 @@ const savedList = document.querySelector("#saved");
 const savedStatus = document.querySelector("#saved-status");
 const showAllSavedButton = document.querySelector("#show-all-saved");
 const sentimentFilter = document.querySelector("#sentiment-filter");
+const topicFilter = document.querySelector("#topic-filter");
 const cardTemplate = document.querySelector("#card-template");
 const savedTemplate = document.querySelector("#saved-template");
 
 const SAVED_PREVIEW_COUNT = 5; // the saved list shows the newest 5 until "Show all" is clicked
 
 let shownResults = []; // the current search: one { article, card } per result
+let shownTopic = ""; // the search those results came from: saved as the topic of each analysis
 let showAllSaved = false;
 
 // Call our API and return the parsed JSON. On an error status, log the server's detail for
@@ -51,6 +53,7 @@ searchForm.addEventListener("submit", async (event) => {
 });
 
 function showResults(query, results) {
+  shownTopic = query;
   shownResults = results.map(({ article, analysis }) => ({ article, card: createCard(article, analysis) }));
   resultsList.replaceChildren(...shownResults.map((result) => result.card));
   resultsHeading.textContent = `News on “${query}”`;
@@ -110,7 +113,7 @@ async function analyzeCard(card, article) {
   card.ariaBusy = "true"; // the CSS shows a moving line on busy cards
   error.hidden = true;
   try {
-    const analysis = await callApi("/api/analyses", {
+    const analysis = await callApi(`/api/analyses?topic=${encodeURIComponent(shownTopic)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(article),
@@ -166,16 +169,18 @@ function verdictHeadline(counts, analysed) {
 // ---- Saved analyses ----
 
 async function loadSaved() {
-  const sentiment = sentimentFilter.value;
-  const path = sentiment ? `/api/analyses?sentiment=${sentiment}` : "/api/analyses";
+  loadTopics(); // a new analysis may have added a topic
+  const filters = new URLSearchParams(); // builds "sentiment=negative&topic=nvidia", escaping each value
+  if (sentimentFilter.value) filters.set("sentiment", sentimentFilter.value);
+  if (topicFilter.value) filters.set("topic", topicFilter.value);
   try {
-    const analyses = await callApi(path);
+    const analyses = await callApi(`/api/analyses?${filters}`);
     const shown = showAllSaved ? analyses : analyses.slice(0, SAVED_PREVIEW_COUNT);
     savedList.replaceChildren(...shown.map(createSavedRow));
     showAllSavedButton.textContent = `Show all ${analyses.length}`;
     showAllSavedButton.hidden = shown.length === analyses.length;
     savedStatus.textContent = analyses.length > 0 ? ""
-      : sentiment ? `No ${sentiment} analyses yet.`
+      : filters.size > 0 ? "No saved analyses match these filters."
       : "No analyses yet. Search for a company or topic and click Analyze.";
   } catch {
     savedStatus.textContent = "Couldn't load the saved analyses. Please reload the page.";
@@ -193,7 +198,21 @@ function createSavedRow(analysis) {
   return row;
 }
 
+// Fill the topic dropdown with every search that has saved analyses ("nvidia (7)"), keeping the current choice.
+async function loadTopics() {
+  try {
+    const topics = await callApi("/api/topics");
+    const chosen = topicFilter.value;
+    const options = topics.map(({ topic, count }) => new Option(`${topic} (${count})`, topic)); // Option(text, value)
+    topicFilter.replaceChildren(new Option("all topics", ""), ...options);
+    topicFilter.value = topics.some(({ topic }) => topic === chosen) ? chosen : "";
+  } catch {
+    // keep the dropdown as it is; the saved list shows its own error message
+  }
+}
+
 sentimentFilter.addEventListener("change", loadSaved);
+topicFilter.addEventListener("change", loadSaved);
 showAllSavedButton.addEventListener("click", () => {
   showAllSaved = true;
   loadSaved();

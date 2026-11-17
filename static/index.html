@@ -48,14 +48,19 @@
     <section>
       <div class="section-header">
         <h2>Saved analyses</h2>
-        <label class="filter">Show
-          <select id="sentiment-filter">
-            <option value="">all</option>
-            <option value="positive">positive</option>
-            <option value="neutral">neutral</option>
-            <option value="negative">negative</option>
-          </select>
-        </label>
+        <div class="filters">
+          <label class="filter">Topic
+            <select id="topic-filter"><option value="">all topics</option></select>
+          </label>
+          <label class="filter">Show
+            <select id="sentiment-filter">
+              <option value="">all</option>
+              <option value="positive">positive</option>
+              <option value="neutral">neutral</option>
+              <option value="negative">negative</option>
+            </select>
+          </label>
+        </div>
       </div>
       <p id="saved-status" class="status" role="status"></p>
       <ol id="saved" class="cards"></ol>
