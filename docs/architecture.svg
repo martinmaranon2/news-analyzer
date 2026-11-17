@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 512" role="img" aria-label="The browser calls main.py over JSON; main.py uses news.py, analyzer.py and db.py, which call GNews, OpenAI and PostgreSQL">
+  <style>
+    .bg { fill: #ffffff; stroke: #d5dbe4; }
+    .box { fill: #e9edf3; stroke: #d5dbe4; stroke-width: 1.5; }
+    .ours { fill: #e1e8f8; stroke: #2450b8; stroke-width: 1.5; }
+    .ext { fill: #ffffff; stroke: #566173; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .t1 { fill: #131922; font: 600 15px "Helvetica Neue", Arial, sans-serif; }
+    .t2 { fill: #566173; font: 400 11.5px ui-monospace, Menlo, Consolas, monospace; }
+    .lbl { fill: #566173; font: 400 11px ui-monospace, Menlo, Consolas, monospace; }
+    .edge { stroke: #566173; stroke-width: 1.5; fill: none; }
+    .head { fill: #566173; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #151c25; stroke: #2a3441; }
+      .box { fill: #1c2530; stroke: #2a3441; }
+      .ours { fill: #1c2945; stroke: #86a8ff; }
+      .ext { fill: #151c25; stroke: #9ba7b6; }
+      .t1 { fill: #e5eaf1; }
+      .t2, .lbl { fill: #9ba7b6; }
+      .edge { stroke: #9ba7b6; }
+      .head { fill: #9ba7b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="head" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0.5" y="0.5" width="699" height="511" rx="12"/>
+
+  <rect class="box" x="200" y="22" width="300" height="64" rx="8"/>
+  <text class="t1" x="350" y="49" text-anchor="middle">Browser</text>
+  <text class="t2" x="350" y="70" text-anchor="middle">index.html · app.js · style.css</text>
+
+  <path class="edge" d="M350,86 L350,138" marker-end="url(#arrow)"/>
+  <text class="lbl" x="362" y="116">fetch() · JSON</text>
+
+  <rect class="ours" x="200" y="140" width="300" height="64" rx="8"/>
+  <text class="t1" x="350" y="167" text-anchor="middle">main.py · FastAPI</text>
+  <text class="t2" x="350" y="188" text-anchor="middle">/api routes + serves the page</text>
+
+  <path class="edge" d="M350,204 L350,232 M120,232 L580,232"/>
+  <path class="edge" d="M120,232 L120,262" marker-end="url(#arrow)"/>
+  <path class="edge" d="M350,232 L350,262" marker-end="url(#arrow)"/>
+  <path class="edge" d="M580,232 L580,262" marker-end="url(#arrow)"/>
+
+  <rect class="ours" x="20" y="264" width="200" height="72" rx="8"/>
+  <text class="t1" x="120" y="294" text-anchor="middle">news.py</text>
+  <text class="t2" x="120" y="316" text-anchor="middle">search + article text</text>
+
+  <rect class="ours" x="250" y="264" width="200" height="72" rx="8"/>
+  <text class="t1" x="350" y="294" text-anchor="middle">analyzer.py</text>
+  <text class="t2" x="350" y="316" text-anchor="middle">analysis + briefing</text>
+
+  <rect class="ours" x="480" y="264" width="200" height="72" rx="8"/>
+  <text class="t1" x="580" y="294" text-anchor="middle">db.py</text>
+  <text class="t2" x="580" y="316" text-anchor="middle">save · list · topics</text>
+
+  <path class="edge" d="M120,336 L120,394" marker-end="url(#arrow)"/>
+  <text class="lbl" x="130" y="370">httpx</text>
+  <path class="edge" d="M350,336 L350,394" marker-end="url(#arrow)"/>
+  <text class="lbl" x="360" y="370">responses.parse</text>
+  <path class="edge" d="M580,336 L580,394" marker-end="url(#arrow)"/>
+  <text class="lbl" x="590" y="370">psycopg</text>
+
+  <rect class="ext" x="20" y="396" width="200" height="64" rx="8"/>
+  <text class="t1" x="120" y="423" text-anchor="middle">GNews API</text>
+  <text class="t2" x="120" y="444" text-anchor="middle">+ publisher web pages</text>
+
+  <rect class="ext" x="250" y="396" width="200" height="64" rx="8"/>
+  <text class="t1" x="350" y="423" text-anchor="middle">OpenAI API</text>
+  <text class="t2" x="350" y="444" text-anchor="middle">gpt-6-luna</text>
+
+  <rect class="ext" x="480" y="396" width="200" height="64" rx="8"/>
+  <text class="t1" x="580" y="423" text-anchor="middle">PostgreSQL</text>
+  <text class="t2" x="580" y="444" text-anchor="middle">table: analyses</text>
+
+  <text class="lbl" x="20" y="490">filled = our code · dashed = outside service</text>
+</svg>
