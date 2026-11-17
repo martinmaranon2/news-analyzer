@@ -79,11 +79,11 @@ def get_analysis_by_url(url: str) -> StoredAnalysis | None:
 
 
 def list_analyses(sentiment: Sentiment | None = None) -> list[StoredAnalysis]:
-    """Return saved analyses, newest first; only those with one sentiment if given."""
+    """Return saved analyses, newest article first; only those with one sentiment if given."""
     with _connect() as conn:
         cursor = conn.cursor(row_factory=class_row(StoredAnalysis))
         if sentiment is None:
-            return cursor.execute("SELECT * FROM analyses ORDER BY created_at DESC").fetchall()
+            return cursor.execute("SELECT * FROM analyses ORDER BY published_at DESC").fetchall()
         return cursor.execute(
-            "SELECT * FROM analyses WHERE sentiment = %s ORDER BY created_at DESC", (sentiment,)
+            "SELECT * FROM analyses WHERE sentiment = %s ORDER BY published_at DESC", (sentiment,)
         ).fetchall()

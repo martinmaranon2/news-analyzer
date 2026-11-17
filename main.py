@@ -69,7 +69,7 @@ def create_analysis(article: news.Article, response: Response) -> db.StoredAnaly
 
 @app.get("/api/analyses")
 def list_saved_analyses(sentiment: db.Sentiment | None = None) -> list[db.StoredAnalysis]:
-    """Return all saved analyses, newest first; only one sentiment if ?sentiment= is given."""
+    """Return all saved analyses, newest article first; only one sentiment if ?sentiment= is given."""
     return db.list_analyses(sentiment)
 
 
