@@ -118,11 +118,12 @@ button:disabled { cursor: progress; }
 [data-sentiment="positive"] { --tone: var(--positive); }
 [data-sentiment="neutral"] { --tone: var(--neutral); }
 [data-sentiment="negative"] { --tone: var(--negative); }
+[data-sentiment="mixed"] { --tone: var(--caution); } /* only a topic briefing can be mixed */
 .provenance { color: var(--muted); font-size: 0.8125rem; }
 .provenance[data-source="snippet"] { color: var(--caution); }
 
-/* While a card is being analysed, a thin line sweeps across its top edge. */
-.card[aria-busy="true"]::before {
+/* While a card is being analysed, a thin line sweeps across its top edge (the briefing panel: its bottom edge). */
+.card[aria-busy="true"]::before, .briefing-panel[aria-busy="true"]::after {
   content: ""; position: absolute; inset: -1px 0 auto; height: 1px;
   background: linear-gradient(90deg, transparent, var(--ivory), transparent) no-repeat;
   background-size: 40% 100%;
@@ -143,6 +144,23 @@ button:disabled { cursor: progress; }
 .saved-meta { color: var(--muted); font-size: 0.8125rem; }
 .show-all { margin-top: 16px; }
 
+/* Topic briefing: the AI's summing-up of every saved analysis of the chosen topic. */
+.briefing-panel { position: relative; display: flex; flex-direction: column; margin-top: 16px; padding-bottom: 14px; }
+.briefing-panel button { align-self: flex-end; padding: 6px 14px; font-size: 0.875rem; } /* small, on the right */
+.briefing-panel:not([aria-busy="true"]) button:disabled { cursor: default; } /* "Briefed": done, not waiting */
+.briefing-panel .card-error { margin: 8px 0 0; text-align: right; }
+.briefing { margin-top: 16px; }
+.briefing .badge { margin: 0 0 10px; }
+.briefing-text { margin: 0; max-width: 66ch; }
+.briefing-panel[aria-busy="true"]::after { inset: auto 0 0; } /* the sweeping line, under the button */
+/* While busy, three dots fill up one by one after the button text; clipping (not adding) them keeps the width fixed. */
+.briefing-panel[aria-busy="true"] button::after {
+  content: "..."; display: inline-block;
+  clip-path: inset(0 100% 0 0);
+  animation: dots 1.2s steps(4, jump-none) infinite;
+}
+@keyframes dots { to { clip-path: inset(0); } }
+
 @media (max-width: 560px) {
   body { padding-top: 36px; }
   h1 { font-size: 2rem; }
@@ -152,7 +170,8 @@ button:disabled { cursor: progress; }
 
 @media (prefers-reduced-motion: reduce) {
   .sentiment-bar span, .saved-row summary::after { transition: none; }
-  .card[aria-busy="true"]::before { animation: none; background-position: 50% 0; }
+  .card[aria-busy="true"]::before, .briefing-panel[aria-busy="true"]::after { animation: none; background-position: 50% 0; }
+  .briefing-panel[aria-busy="true"] button::after { animation: none; clip-path: none; }
 }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

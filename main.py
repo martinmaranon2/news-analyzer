@@ -1,4 +1,4 @@
-"""News Analyzer: search recent news, analyse an article with AI, store and list the results."""
+"""News Analyzer: search recent news, analyse articles with AI, store and list them, brief on a topic."""
 
 import os
 from pathlib import Path
@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import analyzer
 import db
@@ -27,6 +27,19 @@ class SearchResult(BaseModel):
 
     article: news.Article
     analysis: db.StoredAnalysis | None
+
+
+class BriefingRequest(BaseModel):
+    """The JSON body of POST /api/briefings: which topic (search) to sum up."""
+
+    topic: str = Field(max_length=200)
+
+
+class Briefing(analyzer.TopicBriefing):
+    """The AI's verdict, headline and briefing on a topic, plus what it was based on."""
+
+    topic: str
+    analysis_count: int
 
 
 @app.get("/api/health")
@@ -91,6 +104,23 @@ def get_saved_analysis(analysis_id: int) -> db.StoredAnalysis:
     if analysis is None:
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis
+
+
+@app.post("/api/briefings")
+def create_briefing(request: BriefingRequest) -> Briefing:
+    """Sum up all saved analyses of one topic with AI; 404 if the topic has none.
+
+    Not saved: each call asks the model again, so the briefing includes analyses added since the last one.
+    """
+    topic = _normalise_topic(request.topic)
+    analyses = db.list_analyses(topic=topic) if topic else []  # only spaces means no topic, not "all topics"
+    if not analyses:
+        raise HTTPException(status_code=404, detail=f"No saved analyses for the topic {request.topic!r}")
+    try:
+        result = analyzer.brief(topic, analyses)
+    except analyzer.AnalysisError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    return Briefing(**result.model_dump(), topic=topic, analysis_count=len(analyses))
 
 
 def _normalise_topic(topic: str | None) -> str | None:

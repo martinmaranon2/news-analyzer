@@ -15,6 +15,10 @@ const savedStatus = document.querySelector("#saved-status");
 const showAllSavedButton = document.querySelector("#show-all-saved");
 const sentimentFilter = document.querySelector("#sentiment-filter");
 const topicFilter = document.querySelector("#topic-filter");
+const briefingPanel = document.querySelector("#briefing-panel");
+const briefButton = document.querySelector("#brief-button");
+const briefingError = document.querySelector("#briefing-error");
+const briefing = document.querySelector("#briefing");
 const cardTemplate = document.querySelector("#card-template");
 const savedTemplate = document.querySelector("#saved-template");
 
@@ -23,6 +27,8 @@ const SAVED_PREVIEW_COUNT = 5; // the saved list shows the newest 5 until "Show 
 let shownResults = []; // the current search: one { article, card } per result
 let shownTopic = ""; // the search those results came from: saved as the topic of each analysis
 let showAllSaved = false;
+let topicCounts = new Map(); // topic → how many saved analyses it has (filled by loadTopics)
+const briefings = new Map(); // topic → its last briefing, kept while the page is open
 
 // Call our API and return the parsed JSON. On an error status, log the server's detail for
 // developers and throw, so the caller can show the user a friendly message instead.
@@ -202,10 +208,12 @@ function createSavedRow(analysis) {
 async function loadTopics() {
   try {
     const topics = await callApi("/api/topics");
+    topicCounts = new Map(topics.map(({ topic, count }) => [topic, count]));
     const chosen = topicFilter.value;
     const options = topics.map(({ topic, count }) => new Option(`${topic} (${count})`, topic)); // Option(text, value)
     topicFilter.replaceChildren(new Option("all topics", ""), ...options);
-    topicFilter.value = topics.some(({ topic }) => topic === chosen) ? chosen : "";
+    topicFilter.value = topicCounts.has(chosen) ? chosen : "";
+    updateBriefingPanel(); // a new analysis may have raised the chosen topic's count
   } catch {
     // keep the dropdown as it is; the saved list shows its own error message
   }
@@ -216,6 +224,59 @@ topicFilter.addEventListener("change", loadSaved);
 showAllSavedButton.addEventListener("click", () => {
   showAllSaved = true;
   loadSaved();
+});
+
+// ---- Topic briefing ----
+
+// Show the panel while one topic is chosen, with that topic's last briefing if there is one. The button is
+// off while that briefing already covers every saved analysis of the topic: briefing it again would cost an
+// AI call and say the same. A new analysis of the topic raises its count and turns the button back on.
+function updateBriefingPanel() {
+  const topic = topicFilter.value;
+  const last = briefings.get(topic);
+  briefingPanel.hidden = !topic;
+  if (last) showBriefing(last);
+  else briefing.hidden = true;
+  if (briefingPanel.ariaBusy === "true") return; // the click handler is using the button
+  const upToDate = last !== undefined && last.analysis_count === topicCounts.get(topic);
+  briefButton.disabled = upToDate;
+  briefButton.textContent = upToDate ? `Briefed on all ${last.analysis_count} analyses` : `Brief me on “${topic}”`;
+}
+
+briefButton.addEventListener("click", async () => {
+  const topic = topicFilter.value;
+  briefButton.disabled = true;
+  briefButton.textContent = "Writing the briefing";
+  briefingPanel.ariaBusy = "true"; // the CSS sweeps a line under the button and adds filling dots
+  briefingError.hidden = true;
+  try {
+    const result = await callApi("/api/briefings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic }),
+    });
+    briefings.set(topic, result);
+  } catch {
+    briefingError.textContent = "Couldn't write the briefing. Please try again.";
+    briefingError.hidden = false;
+  }
+  briefingPanel.ariaBusy = "false";
+  updateBriefingPanel(); // shows the new briefing; the button stays off until the topic gets a new analysis
+});
+
+function showBriefing(result) {
+  briefing.dataset.sentiment = result.verdict; // the CSS colours the badge by it, "mixed" included
+  briefing.querySelector(".badge").textContent = `${capitalize(result.verdict)} overall`;
+  briefing.querySelector(".briefing-headline").textContent = result.headline;
+  briefing.querySelector(".briefing-text").textContent = result.briefing;
+  briefing.querySelector(".note").textContent =
+    `Based on all ${result.analysis_count} saved analyses of “${result.topic}”, whatever the Show filter says.`;
+  briefing.hidden = false;
+}
+
+topicFilter.addEventListener("change", () => {
+  briefingError.hidden = true; // an error was about the previous topic
+  updateBriefingPanel();
 });
 
 // ---- Small helpers ----
