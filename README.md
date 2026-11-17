@@ -140,6 +140,11 @@ In both halves I always checked what the AI produced and made sure I understood 
 
 ## Limitations and what I'd do with more time
 
+- **The verdict is for each article's own subject, not always the company searched:** a search for Airbus also finds
+  articles mainly about airlines that fly Airbus planes, so "Negative for Lufthansa" counts towards the Airbus headline
+  and bar. The labels name the subject, and the briefing gets each analysis's subject, but the overall verdict mixes
+  subjects. Next step: judge each article for the searched company and mark articles only loosely about it; that
+  means one analysis per article and topic, so the same article could be paid for once per topic.
 - **No rate limiting:** anyone with the link can spend OpenAI credit. Next step: a limit per visitor and per day.
 - **One shared list for everyone:** there is no login, so every visitor sees every saved analysis, including the ones
   others ran. Next step: keep the analyses shared as a cache (an article is still analyzed and paid for only once), but
